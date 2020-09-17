@@ -1,0 +1,186 @@
+﻿@model StateModel
+
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<script src="//code.jquery.com/jquery-2.1.1.min.js" type="text/javascript"></script>
+<script>
+    function loadPartialView() {
+        jQuery.ajax({
+        url: "@Url.Action("GetState", "Home")",
+        type: 'GET', // <-- make a async request by GET
+        dataType: 'html', // <-- to expect an html response
+        success: function(result) {
+            document.getElementById("lastUpdated").innerHTML = new Date($.parseJSON( result ).lastUpdated).toLocaleString();
+            document.getElementById("price").innerHTML = '$' + Number($.parseJSON( result ).btcPrice).toFixed(2);
+            document.getElementById("btcAmount").innerHTML = Number($.parseJSON( result ).btcAmount).toFixed(8);
+            document.getElementById("usdtAmount").innerHTML = Number($.parseJSON( result ).usdtAmount).toFixed(2);
+            document.getElementById("usdtAmountValue").innerHTML = '$' + Number($.parseJSON( result ).usdtAmount).toFixed(2);
+            document.getElementById("portfolioValue").innerHTML = '$' + Number($.parseJSON( result ).portfolioValue).toFixed(2);
+            document.getElementById("btcAmountValue").innerHTML = '$' + Number($.parseJSON( result ).btcAmountValue).toFixed(2);
+            document.getElementById("inPercentage").innerHTML = Number($.parseJSON(result).inPercentage).toFixed(2) + '%';
+            let statusColor = $.parseJSON(result).gmailTokenIsValid ? 'rgb(0, 185, 108)' : 'rgb(232, 23, 50)'
+            document.getElementById("tokenStatus").setAttribute('style', 'height: 15px; width: 15px; border-radius: 50%; display: inline-block; background-color: ' + statusColor);
+            //document.getElementById("profit").innerHTML = Number($.parseJSON( result ).profit).toFixed(2) + '%';
+            //document.getElementById("result").innerHTML = result;
+
+            //Open orders
+            var openOrders = $.parseJSON( result ).openOrders;
+            var $tableOO = $( "<table style='width: 100%'></table>" );
+            if (!openOrders || openOrders.length == 0) {
+                $tableOO = $("<p><small><i>No open orders</i></small></p>");
+            } else {
+                for (var i = 0; i < openOrders.length; i++) {
+                    var emp = openOrders[i];
+                    var $line = $( "<tr></tr>" );
+                    var type = emp.sell ? 'Sell' : 'Buy';
+                    var createdAtLocalString = new Date(emp.createdAt).toLocaleString();
+                    var percantage = Number(emp.percentageToTrade).toFixed(2) + '%';
+                    var btcPriceAtTrade = '$' + Number(emp.btcPrice).toFixed(2);
+                    $line.append($(`<td>
+                                        <span style='font-weight: bold'>` + type + `<small style="margin-left: 6px">` + percantage + ` at ` + btcPriceAtTrade + `</small></span><br />
+                                        <span style='color: darkgrey; position: relative; top: -7px;'><small>` + createdAtLocalString + `</small></span>
+                                    </td>
+                                    <td style="text-align: right">
+                                        <b><span> ₿` + Number(emp.btcToTradeAmount).toFixed(8) + `</span></b><br />
+                                        <span style='color: darkgrey; position: relative; top: -7px;'><small>` + '$' + Number(emp.btcToTradeAmountValue).toFixed(2) + `</small></span>
+                                    </td>`));
+
+                    $tableOO.append( $line );
+                }
+            }
+            $('#openOrders').empty();
+            $tableOO.appendTo( $( "#openOrders" ) );
+
+            //Completed orders
+            var completedOrders = $.parseJSON( result ).completedOrders;
+            var $tableCO = $( "<table style='width: 100%'></table>" );
+            if (!completedOrders || completedOrders.length == 0) {
+                $tableCO = $("<p><small><i>No completed orders</i></small></p>");
+            } else {
+                for (var i = 0; i < completedOrders.length; i++) {
+                    var emp = completedOrders[i];
+                    var $line = $("<tr></tr>");
+                    var type = emp.sell ? 'Sell' : 'Buy';
+                    var createdAtLocalString = new Date(emp.createdAt).toLocaleString();
+                    var percantage = Number(emp.percentageToTrade).toFixed(2) + '%';
+                    var btcPriceAtTrade = '$' + Number(emp.btcPrice).toFixed(2);
+                    $line.append($(`<td>
+                                        <span style='font-weight: bold'>` + type + `<small style="margin-left: 6px">` + percantage + ` at ` + btcPriceAtTrade + `</small></span><br />
+                                        <span style='color: darkgrey; position: relative; top: -7px;'><small>` + createdAtLocalString + `</small></span>
+                                    </td>
+                                    <td style="text-align: right">
+                                        <b><span> ₿` + Number(emp.btcToTradeAmount).toFixed(8) + `</span></b><br />
+                                        <span style='color: darkgrey; position: relative; top: -7px;'><small>` + '$' + Number(emp.btcToTradeAmountValue).toFixed(2) + `</small></span>
+                                    </td>`));
+                    $tableCO.append( $line );
+                }
+            }
+            $('#completedOrders').empty();
+            $tableCO.appendTo($("#completedOrders"));
+
+            //Shares
+            var shares = $.parseJSON( result ).shares;
+            var $tableSH = $( "<table style='width: 100%'></table>" );
+            if (!shares || shares.length == 0) {
+                $tableSH = $("<p><small><i>No shares active</i></small></p>");
+            } else {
+                for (var i = 0; i < shares.length; i++) {
+                    var emp = shares[i];
+                    var $line = $("<tr></tr>");
+                    var amount = Number(emp.amount).toFixed(2) + '%';
+                    var value = '$' + Number(emp.value).toFixed(2);
+                    var profitColor = Number(emp.profit).toFixed(2) > 0 ? 'rgb(0, 185, 108)' : 'rgb(232, 23, 50)';
+                    $line.append($(`<td>
+                                        <span style='font-weight: bold'>` + emp.name + `</span><br />
+                                        <span style='color: darkgrey; position: relative; top: -7px;'><small>` + amount + `</small></span>
+                                    </td>
+                                    <td style="text-align: right">
+                                        <b><span>` + value + `</span></b><br />
+                                        <span style='color: ` + profitColor + `; position: relative; top: -7px;'><small>` + Number(emp.profit).toFixed(2) + '%' + `</small></span>
+                                    </td>`));
+                    $tableSH.append( $line );
+                }
+            }
+            $('#shares').empty();
+            $tableSH.appendTo( $( "#shares" ) );
+        }
+       });
+    }
+
+    jQuery(function() {
+
+       loadPartialView(); // first time
+
+       // re-call the function each 5 seconds
+        //let counter = 60;
+        //document.getElementById("counter").innerHTML = counter;
+        //window.setInterval(
+        //    function () {
+        //        counter--;
+        //        if (counter == 0) {
+        //            loadPartialView();
+        //            counter = 60;
+        //        }
+        //        document.getElementById("counter").innerHTML = counter;
+        //    }, 1000);
+
+    });
+</script>
+
+@*<div id="result"></div>*@
+<div style="padding: 20px 0px">
+    <p style="width: 100%"><small><span id="lastUpdated"></span></small> <small style="float:right"><span id="tokenStatus"></span></small></p>
+    <div style="text-align: center; padding-top: 25px; padding-bottom: 25px">
+        <h1 id="portfolioValue"></h1>
+        <p style="position: relative; top: -5px;"><span style="font-size: 19px; color:rgb(0, 185, 108)">in: </span><span style="font-size: 16px" id="inPercentage"></span></p>
+    </div>
+    <div style="width: 100%; height: 0.5px; text-align: center; background-color: darkgray; margin: 20px 0">
+        <span style="padding: 0 10px; position: relative; top: -12px; background-color: black; color: darkgray">
+            Coins
+        </span>
+    </div>
+    <div>
+        <table style="width: 100%">
+            <tr>
+                <td>
+                    <span><b>Bitcoin</b> <small style="margin-left: 4px">BTC</small></span><br />
+                    <span style="color: darkgrey; position: relative; top: -7px;"><small><span id="btcAmount"></span><span style="padding-right: 6px; padding-left: 6px">|</span><span id="price"></span></small></span>
+                </td>
+                <td style="text-align: right">
+                    <b><span id="btcAmountValue"></span></b>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <span><b>Tether</b> <small style="margin-left: 4px">USDT</small></span><br />
+                    <span style="color: darkgrey; position: relative; top: -7px;"><small><span id="usdtAmount"></span><span style="padding-right: 6px; padding-left: 6px">|</span>$1</small></span>
+                </td>
+                <td style="text-align: right">
+                    <b><span id="usdtAmountValue"></span></b>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div style="width: 100%; height: 0.5px; text-align: center; background-color: darkgray; margin: 20px 0">
+        <span style="padding: 0 10px; position: relative; top: -12px; background-color: black; color: darkgray">
+            Shares
+        </span>
+    </div>
+    <div id="shares"></div>
+    <div style="width: 100%; height: 0.5px; text-align: center; background-color: darkgray; margin: 20px 0">
+        <span style="padding: 0 10px; position: relative; top: -12px; background-color: black; color: darkgray">
+            Open orders
+        </span>
+    </div>
+    <div id="openOrders"></div>
+    <div style="width: 100%; height: 0.5px; text-align: center; background-color: darkgray; margin: 20px 0">
+        <span style="padding: 0 10px; position: relative; top: -12px; background-color: black; color: darkgray">
+            Completed orders
+        </span>
+    </div>
+    <div id="completedOrders"></div>
+</div>
+@*<div id="result"></div>*@
+
